@@ -2,6 +2,7 @@ package net.minevn.resourcepack;
 
 import com.destroystokyo.paper.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -12,6 +13,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.geysermc.floodgate.api.FloodgateApi;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public final class ResourcePack extends JavaPlugin implements Listener {
 
     String url, hash;
+    private boolean hasFloodgate = false;
     Location loc;
     private final Map<UUID, Integer> tries = new HashMap<>();
 
@@ -31,6 +34,10 @@ public final class ResourcePack extends JavaPlugin implements Listener {
         url = config.getString("url");
         hash = config.getString("hash");
         getServer().getPluginManager().registerEvents(this, this);
+        if (getServer().getPluginManager().isPluginEnabled("floodgate")) {
+            getLogger().info(ChatColor.GREEN + "Found Floodgate");
+            hasFloodgate = true;
+        }
         getCommand("loadrsp").setExecutor(new LoadCommand());
         getCommand("setrsploc").setExecutor(new SetLocCommand());
         String locStr = config.getString("loc");
@@ -41,11 +48,17 @@ public final class ResourcePack extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
+        if (hasFloodgate){
+            if (FloodgateApi.getInstance().isFloodgatePlayer(e.getPlayer().getUniqueId())) return;
+        }
         e.getPlayer().setResourcePack(url, hash);
     }
 
     @EventHandler
     public void onLeave(PlayerQuitEvent e) {
+        if (hasFloodgate){
+            if (FloodgateApi.getInstance().isFloodgatePlayer(e.getPlayer().getUniqueId())) return;
+        }
         tries.remove(e.getPlayer().getUniqueId());
     }
 
